@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using API.Dtos;
+using AutoMapper;
 using Core.Entities;
 using Core.Entities.Media;
 using Core.Interfaces;
+using Core.Specifications;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,32 +19,45 @@ namespace API.Controllers
     public class MyMediaController : ControllerBase
     {
 
-        private readonly IVideoFileRepository _vf_repo;
-        private readonly IDiskVolumeRepository _dv_repo;
+        private readonly IGenericRepository<VideoFile> _vf_repo;
+        private readonly IGenericRepository<DiskVolume> _dv_repo;
+        private readonly IMapper _mapper;
 
-        public MyMediaController(IVideoFileRepository vf_repo, IDiskVolumeRepository dv_repo)
+        public MyMediaController(IGenericRepository<VideoFile> vf_repo, IGenericRepository<DiskVolume> dv_repo, IMapper mapper)
         {
+            _mapper = mapper;
             _dv_repo = dv_repo;
             _vf_repo = vf_repo;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<VideoFile>>> GetMedias()
+        public async Task<ActionResult<IReadOnlyList<VideoFileToReturnDto>>> GetMedias()
         {
-            var VideoFiles = await _vf_repo.GetVideoFilesAsync();
-            return Ok(VideoFiles);
+            var spec = new MediasWithVolumes();
+            var VideoFiles = await _vf_repo.ListAsync(spec);
+
+            return Ok(_mapper.Map<IReadOnlyList<VideoFile>, IReadOnlyList<VideoFileToReturnDto>>(VideoFiles));
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<VideoFile>> GetMedia(int id)
+        [HttpGet("{mediaId}")]
+        public async Task<ActionResult<VideoFileToReturnDto>> GetMedia(int mediaId)
         {
-            return await _vf_repo.GetVideoFileByIdAsync(id);
+            var spec = new MediasWithVolumes(mediaId);
+            var videoFile = await _vf_repo.GetEntityWithSpec(spec);
+            return _mapper.Map<VideoFile, VideoFileToReturnDto>(videoFile);
+
         }
 
-        [HttpGet("volumes")]
-        public async Task<ActionResult<IReadOnlyList<DiskVolume>>> GetVolumes()
-        {
-            return Ok( await _dv_repo.GetDiskVolumesAsync());
-        }
+        // [HttpGet("volumes")]
+        // public async Task<ActionResult<IReadOnlyList<DiskVolume>>> GetVolumes()
+        // {
+        //     return Ok(await _dv_repo.ListAsync());
+        // }
+
+        // [HttpGet("{volumeId}")]
+        // public async Task<ActionResult<DiskVolume>> GetVolume(int volumeId)
+        // {
+        //      return await _dv_repo.GetByIdAsync(volumeId);
+        // }
     }
 }
