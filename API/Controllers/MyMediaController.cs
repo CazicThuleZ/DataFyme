@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Dtos;
+using API.Errors;
 using AutoMapper;
 using Core.Entities;
 using Core.Entities.Media;
@@ -14,9 +15,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class MyMediaController : ControllerBase
+
+    public class MyMediaController : BaseApiController
     {
 
         private readonly IGenericRepository<VideoFile> _vf_repo;
@@ -40,10 +40,15 @@ namespace API.Controllers
         }
 
         [HttpGet("{mediaId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<VideoFileToReturnDto>> GetMedia(int mediaId)
         {
             var spec = new MediasWithVolumes(mediaId);
             var videoFile = await _vf_repo.GetEntityWithSpec(spec);
+            if (videoFile == null)
+                 return NotFound(new ApiResponse(404));
+
             return _mapper.Map<VideoFile, VideoFileToReturnDto>(videoFile);
 
         }
