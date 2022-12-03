@@ -31,9 +31,9 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<VideoFileToReturnDto>>> GetMedias()
+        public async Task<ActionResult<IReadOnlyList<VideoFileToReturnDto>>> GetMedias(string sort, string? volumeName)
         {
-            var spec = new MediasWithVolumes();
+            var spec = new MediasWithVolumes(sort, volumeName);
             var VideoFiles = await _vf_repo.ListAsync(spec);
 
             return Ok(_mapper.Map<IReadOnlyList<VideoFile>, IReadOnlyList<VideoFileToReturnDto>>(VideoFiles));
